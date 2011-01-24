@@ -1,17 +1,14 @@
+require 'active_support/core_ext/module/deprecation'
+
 class Tag < ActiveRecord::Base
-  has_many :taggings, :dependent => :destroy
-  
-  validates_presence_of :name
-  validates_uniqueness_of :name
-  
   cattr_accessor :destroy_unused
   self.destroy_unused = false
-  
-  # LIKE is used for cross-database case-insensitivity
-  def self.find_or_create_with_like_by_name(name)
-    find(:first, :conditions => ["name LIKE ?", name]) || create(:name => name)
-  end
-  
+
+  has_many :taggings, :dependent => :delete_all
+
+  validates_presence_of :name
+  validates_uniqueness_of :name
+
   def ==(object)
     super || (object.is_a?(Tag) && name == object.name)
   end
@@ -25,47 +22,32 @@ class Tag < ActiveRecord::Base
   end
   
   class << self
-    # Calculate the tag counts for all tags.
-    #  :start_at - Restrict the tags to those created after a certain time
-    #  :end_at - Restrict the tags to those created before a certain time
-    #  :conditions - A piece of SQL conditions to add to the query
-    #  :limit - The maximum number of tags to return
-    #  :order - A piece of SQL to order by. Eg 'count desc' or 'taggings.created_at desc'
-    #  :at_least - Exclude tags with a frequency less than the given value
-    #  :at_most - Exclude tags with a frequency greater than the given value
-    def counts(options = {})
-      find(:all, options_for_counts(options))
+    def find_or_create_with_like_by_name(name)
+      where("LOWER(name) = ?", name.downcase).first || create(:name => name)
     end
-    
-    def options_for_counts(options = {})
-      options.assert_valid_keys :start_at, :end_at, :conditions, :at_least, :at_most, :order, :limit, :joins
-      options = options.dup
+
+    # Calculate the tag counts for all tags.
+    # 
+    # - +:start_at+ - restrict the tags to those created after a certain time
+    # - +:end_at+   - restrict the tags to those created before a certain time
+    # - +:at_least+ - exclude tags with a frequency less than the given value
+    # - +:at_most+  - exclude tags with a frequency greater than the given value
+    # 
+    def counts(options = {})
+      options.assert_valid_keys :start_at, :end_at, :at_least, :at_most
       
-      start_at = sanitize_sql(["#{Tagging.table_name}.created_at >= ?", options.delete(:start_at)]) if options[:start_at]
-      end_at = sanitize_sql(["#{Tagging.table_name}.created_at <= ?", options.delete(:end_at)]) if options[:end_at]
+      rq = joins(:taggings).group(:name)
       
-      conditions = [
-        (sanitize_sql(options.delete(:conditions)) if options[:conditions]),
-        start_at,
-        end_at
-      ].compact
+      rq = rq.having('count_all >= ?', options[:at_least]) if options[:at_least]
+      rq = rq.having('count_all <= ?', options[:at_most])  if options[:at_most]
       
-      conditions = conditions.join(' AND ') if conditions.any?
+      rq = rq.where("#{quoted_table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
+      rq = rq.where("#{quoted_table_name}.created_at <= ?", options[:end_at])   if options[:end_at]
       
-      joins = ["INNER JOIN #{Tagging.table_name} ON #{Tag.table_name}.id = #{Tagging.table_name}.tag_id"]
-      joins << options.delete(:joins) if options[:joins]
+      tags = {}
+      rq.count.each { |tag_name, count| tags[tag_name] = count }
       
-      at_least  = sanitize_sql(['COUNT(*) >= ?', options.delete(:at_least)]) if options[:at_least]
-      at_most   = sanitize_sql(['COUNT(*) <= ?', options.delete(:at_most)]) if options[:at_most]
-      having    = [at_least, at_most].compact.join(' AND ')
-      group_by  = "#{Tag.table_name}.id, #{Tag.table_name}.name HAVING COUNT(*) > 0"
-      group_by << " AND #{having}" unless having.blank?
-      
-      { :select     => "#{Tag.table_name}.id, #{Tag.table_name}.name, COUNT(*) AS count", 
-        :joins      => joins.join(" "),
-        :conditions => conditions,
-        :group      => group_by
-      }.update(options)
+      tags
     end
   end
 end

@@ -4,15 +4,17 @@ begin
   require File.dirname(__FILE__) + '/../../../../config/environment'
 rescue LoadError
   require 'rubygems'
+  gem 'activesupport'
   gem 'activerecord'
   gem 'actionpack'
   require 'active_record'
   require 'action_controller'
+  require 'active_support/dependencies'
 end
 
 # Search for fixtures first
 fixture_path = File.dirname(__FILE__) + '/fixtures/'
-ActiveSupport::Dependencies.load_paths.insert(0, fixture_path)
+ActiveSupport::Dependencies.autoload_paths.insert(0, fixture_path)
 
 require "active_record/test_case"
 require "active_record/fixtures"
@@ -23,7 +25,7 @@ require_dependency File.dirname(__FILE__) + '/../lib/tags_helper'
 
 ActiveRecord::Base.logger = Logger.new(File.dirname(__FILE__) + '/debug.log')
 ActiveRecord::Base.configurations = YAML::load(IO.read(File.dirname(__FILE__) + '/database.yml'))
-ActiveRecord::Base.establish_connection(ENV['DB'] || 'mysql')
+ActiveRecord::Base.establish_connection(ENV['DB'] || 'sqlite3')
 
 load(File.dirname(__FILE__) + '/schema.rb')
 
@@ -52,11 +54,11 @@ class ActiveSupport::TestCase #:nodoc:
       hash
     end
     
-    tags.each do |tag|
-      value = expected_values.delete(tag.name)
+    tags.each do |tag_name, tag_count|
+      value = expected_values.delete(tag_name)
       
-      assert_not_nil value, "Expected count for #{tag.name} was not provided"
-      assert_equal value, tag.count, "Expected value of #{value} for #{tag.name}, but was #{tag.count}"
+      assert_not_nil value, "Expected count for #{tag_name} was not provided"
+      assert_equal value, tag_count, "Expected value of #{value} for #{tag_name}, but was #{tag_count}"
     end
     
     unless expected_values.empty?
