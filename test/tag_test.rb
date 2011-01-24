@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/abstract_unit'
+require File.expand_path('../abstract_unit', __FILE__)
 
 class TagTest < ActiveSupport::TestCase
   def test_name_required
