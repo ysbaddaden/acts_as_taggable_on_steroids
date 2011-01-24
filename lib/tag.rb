@@ -23,7 +23,7 @@ class Tag < ActiveRecord::Base
   
   class << self
     def find_or_create_with_like_by_name(name)
-      where("LOWER(name) = ?", name.downcase).first || create(:name => name)
+      where(arel_table[:name].matches(name)).first || create(:name => name)
     end
 
     # Calculate the tag counts for all tags.

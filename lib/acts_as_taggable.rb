@@ -176,7 +176,7 @@ module ActiveRecord #:nodoc:
               where("#{Tagging.table_name}.taggable_type" => base_class.name).
               where("#{Tagging.quoted_table_name}.taggable_id IN (" + sub.to_sql + ")").
               group("#{Tag.quoted_table_name}.name").
-              having(["LOWER(#{Tag.quoted_table_name}.name) NOT IN (?)", _tags])
+              having(Tag.arel_table[:name].does_not_match_all(_tags))
           end
       end
       
