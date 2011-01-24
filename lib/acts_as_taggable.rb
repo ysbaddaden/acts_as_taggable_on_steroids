@@ -76,7 +76,7 @@ module ActiveRecord #:nodoc:
           
           unless descends_from_active_record?
             tags = tags.joins("INNER JOIN #{quoted_table_name} ON " +
-              "#{quoted_table_name}.#{primary_key} == #{Tagging.quoted_table_name}.taggable_id")
+              "#{quoted_table_name}.#{primary_key} = #{Tagging.quoted_table_name}.taggable_id")
             tags = tags.where(type_condition)
           end
           

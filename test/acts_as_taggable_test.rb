@@ -202,7 +202,7 @@ class ActsAsTaggableOnSteroidsTest < ActiveSupport::TestCase
     assert_equivalent ["Nature", "Question"], posts(:jonathan_rain).tag_list
     posts(:jonathan_rain).taggings.reload
     
-    assert_queries 1 do
+    assert_queries ENV['DB'] == 'sqlite3' ? 1 : 3 do
       posts(:jonathan_rain).update_attributes!(:tag_list => posts(:jonathan_rain).tag_list.to_s)
     end
     
