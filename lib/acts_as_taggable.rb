@@ -32,41 +32,60 @@ module ActiveRecord #:nodoc:
         # Pass either a tag, string, or an array of strings or tags.
         # 
         # Options:
-        # 
         # - +:match_any+ - match any of the given tags (default).
         # - +:match_all+ - match all of the given tags.
         # 
         def tagged_with(tags, options = {})
+          tags = tags.is_a?(Array) ? TagList.new(tags.map(&:to_s)) : TagList.from(tags)
+          return [] if tags.empty?
+          
           records = select("DISTINCT #{quoted_table_name}.*")
           
           if options[:match_all]
-            TagList.from(tags).each_with_index do |tag_name, index|
-              records = records.joins_tags(:suffix => index, :tag_name => tag_name)
-            end
+            records.search_all_tags(tags)
           else
-            records = records.joins(:tags).where(Tag.arel_table[:name].matches_any(*tags))
+            records.search_any_tags(tags)
           end
         end
         
         # Matches records that have none of the given tags.
         def not_tagged_with(tags)
-          tags = TagList.from(tags)
-          joins(:tags).where(Tag.arel_table[:name].not_matches_all(*tags))
+          tags = tags.is_a?(Array) ? TagList.new(tags.map(&:to_s)) : TagList.from(tags)
+          
+          sub = Tagging.select("#{Tagging.table_name}.taggable_id").joins(:tag).
+            where(:taggable_type => base_class.name, "#{Tag.table_name}.name" => tags)
+          
+          where("#{quoted_table_name}.#{primary_key} NOT IN (" + sub.to_sql + ")")
         end
         
         # Returns an array of related tags. Related tags are all the other tags
         # that are found on the models tagged with the provided tags.
         def related_tags(tags)
-          tags = {}
-          search_related_tags(tags).each { |tag| tags[tag.name] = tag.count_all }
-          tags
+          search_related_tags(tags)
         end
         
         # Counts the number of occurences of all tags.
         # See <tt>Tag.counts</tt> for options.
         def tag_counts(options = {})
-          Tag.joins(:taggings).where("taggings.taggable_type" => model_name).counts(options)
-#          tags.counts(options)
+          tags = Tag.joins(:taggings).
+            where("#{Tagging.table_name}.taggable_type" => base_class.name)
+          
+          if options[:tags]
+            tags = tags.where("#{Tag.table_name}.name" => options.delete(:tags))
+          end
+          
+          unless descends_from_active_record?
+            tags = tags.joins("INNER JOIN #{quoted_table_name} ON " +
+              "#{quoted_table_name}.#{primary_key} == #{Tagging.quoted_table_name}.taggable_id")
+            tags = tags.where(type_condition)
+          end
+          
+          if scoped != unscoped
+            sub  = scoped.except(:select).select("#{quoted_table_name}.#{primary_key}")
+            tags = tags.where("#{Tagging.quoted_table_name}.taggable_id IN (#{sub.to_sql})")
+          end
+          
+          tags.counts(options)
         end
         
         # Returns an array of related tags.
@@ -76,31 +95,39 @@ module ActiveRecord #:nodoc:
         # Pass either a tag, string, or an array of strings or tags.
         # 
         # Options:
-        # 
         # - +:order+ - SQL Order how to order the tags. Defaults to "count_all DESC, tags.name".
+        # - +:include+
         # 
         # DEPRECATED: use #related_tags instead.
         def find_related_tags(tags, options = {})
-          tags = search_related_tags(tags)
-          tags = tags.order(options[:order]) if (options[:order])
-          tags
+          rs = related_tags(tags).order(options[:order] || "count DESC, #{Tag.quoted_table_name}.name")
+          rs = rs.includes(options[:include]) if options[:include]
+          rs
         end
         
         # Pass either a tag, string, or an array of strings or tags.
         # 
         # Options:
-        #   :exclude - Find models that are not tagged with the given tags
-        #   :match_all - Find models that match all of the given tags, not just one
-        #   :conditions - A piece of SQL conditions to add to the query
+        # - +:exclude+    - Find models that are not tagged with the given tags
+        # - +:match_all+  - Find models that match all of the given tags, not just one
+        # - +:conditions+ - A piece of SQL conditions to add to the query
+        # - +:include+
         # 
-        # DEPRECATED: use #tagged_with and #without_tags instead.
+        # DEPRECATED: use #tagged_with and #not_tagged_with instead.
         def find_tagged_with(*args)
           options = args.extract_options!
+          tags = args.first
           
-          records = tagged_with(*args)
-          records = records.without_tags(options[:exclude]) if options[:exclude]
+          records = self
           records = records.where(options[:conditions]) if options[:conditions]
-          records
+          records = records.includes(options[:include]) if options[:include]
+          records = records.order(options[:order])      if options[:order]
+          
+          if options[:exclude]
+            records.not_tagged_with(tags)
+          else
+            records.tagged_with(tags, options)
+          end
         end
         
         def caching_tag_list?
@@ -125,15 +152,31 @@ module ActiveRecord #:nodoc:
             joins([taggings, tags])
           end
           
-          def search_related_tags(tags)
-            sub = select("#{quoted_table_name}.#{primary_key}").with_any_tags(tags)
+          def search_all_tags(tags)
+            records = self
             
-            rq = joins(:tags)
-            rq = rq.select("#{Tag.quoted_table_name}.*, COUNT(#{Tag.quoted_table_name}.id) AS count_all")
-            rq = rq.where("#{quoted_table_name}.#{primary_key} IN (" + sub.to_sql + ")")
-            rq = rq.without_tags(tags)
-            rq = rq.group("#{Tag.quoted_table_name}.id")
-            rq = rq.order("count_all DESC, #{Tag.quoted_table_name}.name")
+            tags.dup.each_with_index do |tag_name, index|
+              records = records.joins_tags(:suffix => index, :tag_name => tag_name)
+            end
+            
+            records
+          end
+          
+          def search_any_tags(tags)
+            joins(:tags).where(Tag.arel_table[:name].matches_any(tags.dup))
+          end
+          
+          def search_related_tags(tags)
+            tags = tags.is_a?(Array) ? TagList.new(tags.map(&:to_s)) : TagList.from(tags)
+            sub = select("#{quoted_table_name}.#{primary_key}").search_any_tags(tags)
+            _tags = tags.map { |tag| tag.downcase }
+            
+            Tag.select("#{Tag.quoted_table_name}.*, COUNT(#{Tag.quoted_table_name}.id) AS count").
+              joins(:taggings).
+              where("#{Tagging.table_name}.taggable_type" => base_class.name).
+              where("#{Tagging.quoted_table_name}.taggable_id IN (" + sub.to_sql + ")").
+              group("#{Tag.quoted_table_name}.name").
+              having(["LOWER(#{Tag.quoted_table_name}.name) NOT IN (?)", _tags])
           end
       end
       
@@ -182,7 +225,7 @@ module ActiveRecord #:nodoc:
         # See <tt>Tag.counts</tt> for available options.
         def tag_counts(options = {})
           return [] if tag_list.blank?
-          self.class.tagged_with(tag_list).tag_counts(options)
+          self.class.tag_counts(options.merge(:tags => tag_list))
         end
         
         def reload_with_tag_list(*args) #:nodoc:

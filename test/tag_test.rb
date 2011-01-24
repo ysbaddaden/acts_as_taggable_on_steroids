@@ -41,8 +41,23 @@ class TagTest < ActiveSupport::TestCase
       {:good => 4, :bad => 2, :nature => 10, :question => 2, :animal => 3})
   end
   
-  def test_all_counts_with_relation_chain
-    assert_tag_counts(Tag.where("taggings.created_at >= '2006-08-15'").counts,
-      {:question => 1, :bad => 1, :animal => 1, :nature => 2, :good => 2})
+  def test_all_counts_with_string_conditions
+    assert_tag_counts Tag.counts(:conditions => 'taggings.created_at >= \'2006-08-15\''),
+      :question => 1, :bad => 1, :animal => 1, :nature => 2, :good => 2
+  end
+  
+  def test_all_counts_with_array_conditions
+    assert_tag_counts Tag.counts(:conditions => ['taggings.created_at >= ?', '2006-08-15']),
+      :question => 1, :bad => 1, :animal => 1, :nature => 2, :good => 2
+  end
+  
+  def test_all_counts_with_hash_conditions
+    tag_counts = Tag.counts(
+      :conditions => {
+        :taggings => { :created_at => (DateTime.parse('2006-08-14 23:59') .. DateTime.parse('4000-01-01')) }
+      }
+    )
+    
+    assert_tag_counts tag_counts, :question => 1, :bad => 1, :animal => 1, :nature => 2, :good => 2
   end
 end

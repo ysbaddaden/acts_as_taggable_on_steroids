@@ -7,9 +7,9 @@ rescue LoadError
   gem 'activesupport'
   gem 'activerecord'
   gem 'actionpack'
+  require 'active_support/dependencies'
   require 'active_record'
   require 'action_controller'
-  require 'active_support/dependencies'
 end
 
 # Search for fixtures first
@@ -54,11 +54,11 @@ class ActiveSupport::TestCase #:nodoc:
       hash
     end
     
-    tags.each do |tag_name, tag_count|
-      value = expected_values.delete(tag_name)
+    tags.each do |tag|
+      value = expected_values.delete(tag.name)
       
-      assert_not_nil value, "Expected count for #{tag_name} was not provided"
-      assert_equal value, tag_count, "Expected value of #{value} for #{tag_name}, but was #{tag_count}"
+      assert_not_nil value, "Expected count for #{tag.name} was not provided"
+      assert_equal value, tag.count, "Expected value of #{value} for #{tag.name}, but was #{tag.count}"
     end
     
     unless expected_values.empty?

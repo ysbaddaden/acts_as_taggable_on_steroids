@@ -33,21 +33,27 @@ class Tag < ActiveRecord::Base
     # - +:at_least+ - exclude tags with a frequency less than the given value
     # - +:at_most+  - exclude tags with a frequency greater than the given value
     # 
+    # Deprecated:
+    # 
+    # - +:conditions+
+    # - +:limit+
+    # - +:order+
+    # 
     def counts(options = {})
-      options.assert_valid_keys :start_at, :end_at, :at_least, :at_most
+      options.assert_valid_keys :start_at, :end_at, :at_least, :at_most, :conditions, :limit, :order
       
-      rq = joins(:taggings).group(:name)
+      tags = joins(:taggings).group(:name)
+      tags = tags.having(['count >= ?', options[:at_least]]) if options[:at_least]
+      tags = tags.having(['count <= ?', options[:at_most]])  if options[:at_most]
+      tags = tags.where("#{Tagging.quoted_table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
+      tags = tags.where("#{Tagging.quoted_table_name}.created_at <= ?", options[:end_at])   if options[:end_at]
       
-      rq = rq.having('count_all >= ?', options[:at_least]) if options[:at_least]
-      rq = rq.having('count_all <= ?', options[:at_most])  if options[:at_most]
+      # TODO: deprecation warning
+      tags = tags.where(options[:conditions]) if options[:conditions]
+      tags = tags.limit(options[:limit])      if options[:limit]
+      tags = tags.order(options[:order])      if options[:order]
       
-      rq = rq.where("#{quoted_table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
-      rq = rq.where("#{quoted_table_name}.created_at <= ?", options[:end_at])   if options[:end_at]
-      
-      tags = {}
-      rq.count.each { |tag_name, count| tags[tag_name] = count }
-      
-      tags
+      tags.select("#{quoted_table_name}.*, COUNT(#{quoted_table_name}.id) AS count")
     end
   end
 end
