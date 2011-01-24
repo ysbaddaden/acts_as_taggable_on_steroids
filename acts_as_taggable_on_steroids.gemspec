@@ -1,24 +1,24 @@
 Gem::Specification.new do |s|
   s.name     = "acts_as_taggable_on_steroids"
-  s.version  = "1.1"
-  s.date     = "2009-06-11"
-  s.summary  = "Rails plugin that is based on acts_as_taggable by DHH but includes extras such as tests, smarter tag assignment, and tag cloud calculations."
-  s.email    = "jonathan.viney@gmail.com"
-  s.homepage = "http://github.com/jviney/acts_as_taggable_on_steroids"
-  s.description = "Rails plugin that is based on acts_as_taggable by DHH but includes extras such as tests, smarter tag assignment, and tag cloud calculations."
+  s.version  = "2.0.beta1"
+  s.date     = "2011-01-24"
+  s.summary  = "Rails 3 plugin that is based on acts_as_taggable by jviney that is based on acts_as_taggable by DHH."
+  s.email    = "ysbaddaden@gmail.com"
+  s.homepage = "http://github.com/ysbaddaden/acts_as_taggable_on_steroids"
+  s.description = "Rails plugin that is based on acts_as_taggable by jviney that is based on acts_as_taggable by DHH."
   s.has_rdoc = true
   s.rdoc_options = ["--inline-source", "--charset=UTF-8"]
   s.rubyforge_project = "acts_as_taggable_on_steroids"
-  s.authors  = "Jonathan Viney"
+  s.authors  = ["Jonathan Viney", "Julien Portalier"]
   s.files    = [
     "acts_as_taggable_on_steroids.gemspec",
     "CHANGELOG",
-    "generators/acts_as_taggable_migration",
-    "generators/acts_as_taggable_migration/acts_as_taggable_migration_generator.rb",
-    "generators/acts_as_taggable_migration/templates",
-    "generators/acts_as_taggable_migration/templates/migration.rb",
     "init.rb",
     "lib/acts_as_taggable.rb",
+    "lib/generators/acts_as_taggable_migration",
+    "lib/generators/acts_as_taggable_migration/acts_as_taggable_migration_generator.rb",
+    "lib/generators/acts_as_taggable_migration/templates",
+    "lib/generators/acts_as_taggable_migration/templates/migration.rb",
     "lib/tag.rb",
     "lib/tag_list.rb",
     "lib/tagging.rb",
