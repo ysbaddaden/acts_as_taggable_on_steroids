@@ -1,5 +1,5 @@
 Gem::Specification.new do |s|
-  s.name     = "acts_as_taggable_on_steroids"
+  s.name     = "bborn-acts_as_taggable_on_steroids"
   s.version  = "2.0.beta2"
   s.date     = "2011-02-07"
   s.summary  = "Rails 3 plugin that is based on acts_as_taggable by jviney that is based on acts_as_taggable by DHH."
