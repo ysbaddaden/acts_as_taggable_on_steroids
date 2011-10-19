@@ -40,9 +40,9 @@ class Tag < ActiveRecord::Base
     # - +:order+
     # 
     def counts(options = {})
-      options.assert_valid_keys :start_at, :end_at, :at_least, :at_most, :conditions, :limit, :order
+      options.assert_valid_keys :start_at, :end_at, :at_least, :at_most, :conditions, :limit, :order, :joins
       
-      tags = joins(:taggings).group(:name)
+      tags = joins(:taggings)
       tags = tags.having(['count >= ?', options[:at_least]]) if options[:at_least]
       tags = tags.having(['count <= ?', options[:at_most]])  if options[:at_most]
       tags = tags.where("#{Tagging.quoted_table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
@@ -53,7 +53,11 @@ class Tag < ActiveRecord::Base
       tags = tags.limit(options[:limit])      if options[:limit]
       tags = tags.order(options[:order])      if options[:order]
       
-      tags.select("#{quoted_table_name}.*, COUNT(#{quoted_table_name}.id) AS count")
+      if joins = options.delete(:joins)
+        tags = tags.joins(joins)
+      end
+      
+      tags.select("#{quoted_table_name}.id, #{quoted_table_name}.name, COUNT(#{quoted_table_name}.id) AS count").group('tags.id, tags.name')
     end
   end
 end
