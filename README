@@ -71,7 +71,7 @@ find only objects that are tagged with all the given tags, use match_all.
 
   Post.find_tagged_with('Funny, Silly', :match_all => true)
   
-See <tt>ActiveRecord::Acts::Taggable::InstanceMethods</tt> for more methods and options.
+See <tt>ActsAsTaggable::ActiveRecordExtension::InstanceMethods</tt> for more methods and options.
 
 === Tag cloud calculations
 

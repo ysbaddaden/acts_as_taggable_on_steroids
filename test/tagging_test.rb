@@ -1,4 +1,4 @@
-require File.expand_path('../abstract_unit', __FILE__)
+require 'test_helper'
 
 class TaggingTest < ActiveSupport::TestCase
   def test_tag

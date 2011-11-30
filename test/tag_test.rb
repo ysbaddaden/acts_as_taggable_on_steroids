@@ -1,4 +1,4 @@
-require File.expand_path('../abstract_unit', __FILE__)
+require 'test_helper'
 
 class TagTest < ActiveSupport::TestCase
   def test_name_required
@@ -8,7 +8,7 @@ class TagTest < ActiveSupport::TestCase
   
   def test_name_unique
     t = Tag.create!(:name => "My tag")
-    duplicate = t.clone
+    duplicate = t.dup
     
     assert !duplicate.save
     assert_match /taken/, duplicate.errors[:name].to_s

@@ -1,4 +1,4 @@
-require File.expand_path('../abstract_unit', __FILE__)
+require 'test_helper'
 
 class TagListTest < ActiveSupport::TestCase
   def test_from_leaves_string_unchanged

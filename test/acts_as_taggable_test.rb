@@ -1,90 +1,90 @@
-require File.expand_path('../abstract_unit', __FILE__)
+require 'test_helper'
 
 class ActsAsTaggableOnSteroidsTest < ActiveSupport::TestCase
-  def test_find_related_tags_with
-    assert_equivalent [tags(:good), tags(:bad), tags(:question)], Post.find_related_tags("nature")
-    assert_equivalent [tags(:nature)], Post.find_related_tags([tags(:good)])
-    assert_equivalent [tags(:bad), tags(:question)], Post.find_related_tags(["Very Good", "Nature"])        
-    assert_equivalent [tags(:bad), tags(:question)], Post.find_related_tags([tags(:good), tags(:nature)])
+  def test_related_tags_with
+    assert_equivalent [tags(:good), tags(:bad), tags(:question)], Post.related_tags("nature")
+    assert_equivalent [tags(:nature)], Post.related_tags([tags(:good)])
+    assert_equivalent [tags(:bad), tags(:question)], Post.related_tags(["Very Good", "Nature"])        
+    assert_equivalent [tags(:bad), tags(:question)], Post.related_tags([tags(:good), tags(:nature)])
   end
   
-  def test_find_tagged_with_include_and_order
-    assert_equal photos(:sam_sky, :sam_flower, :jonathan_dog),  Photo.find_tagged_with("Nature", :order => "photos.title DESC", :include => :user)
+  def test_tagged_with_include_and_order
+    assert_equal photos(:sam_sky, :sam_flower, :jonathan_dog),  Photo.includes(:user).order("photos.title DESC").tagged_with("Nature")
   end
   
-  def test_find_related_tags_with_non_existent_tags
-    assert_equal [], Post.find_related_tags("ABCDEFG")
-    assert_equal [], Post.find_related_tags(['HIJKLM'])
+  def test_related_tags_with_non_existent_tags
+    assert_equal [], Post.related_tags("ABCDEFG")
+    assert_equal [], Post.related_tags(['HIJKLM'])
   end
   
-  def test_find_related_tags_with_nothing
-    assert_equal [], Post.find_related_tags("")
-    assert_equal [], Post.find_related_tags([])    
+  def test_related_tags_with_nothing
+    assert_equal [], Post.related_tags("")
+    assert_equal [], Post.related_tags([])    
   end
     
-  def test_find_tagged_with
-    assert_equivalent [posts(:jonathan_sky), posts(:sam_flowers)], Post.find_tagged_with('"Very good"')
-    assert_equal Post.find_tagged_with('"Very good"'), Post.find_tagged_with(['Very good'])
-    assert_equal Post.find_tagged_with('"Very good"'), Post.find_tagged_with([tags(:good)])
+  def test_tagged_with
+    assert_equivalent [posts(:jonathan_sky), posts(:sam_flowers)], Post.tagged_with('"Very good"')
+    assert_equal Post.tagged_with('"Very good"'), Post.tagged_with(['Very good'])
+    assert_equal Post.tagged_with('"Very good"'), Post.tagged_with([tags(:good)])
     
-    assert_equivalent [photos(:jonathan_dog), photos(:sam_flower), photos(:sam_sky)], Photo.find_tagged_with('Nature')
-    assert_equal Photo.find_tagged_with('Nature'), Photo.find_tagged_with(['Nature'])
-    assert_equal Photo.find_tagged_with('Nature'), Photo.find_tagged_with([tags(:nature)])
+    assert_equivalent [photos(:jonathan_dog), photos(:sam_flower), photos(:sam_sky)], Photo.tagged_with('Nature')
+    assert_equal Photo.tagged_with('Nature'), Photo.tagged_with(['Nature'])
+    assert_equal Photo.tagged_with('Nature'), Photo.tagged_with([tags(:nature)])
     
-    assert_equivalent [photos(:jonathan_bad_cat), photos(:jonathan_dog), photos(:jonathan_questioning_dog)], Photo.find_tagged_with('"Crazy animal" Bad')
-    assert_equal Photo.find_tagged_with('"Crazy animal" Bad'), Photo.find_tagged_with(['Crazy animal', 'Bad'])
-    assert_equal Photo.find_tagged_with('"Crazy animal" Bad'), Photo.find_tagged_with([tags(:animal), tags(:bad)])
+    assert_equivalent [photos(:jonathan_bad_cat), photos(:jonathan_dog), photos(:jonathan_questioning_dog)], Photo.tagged_with('"Crazy animal" Bad')
+    assert_equal Photo.tagged_with('"Crazy animal" Bad'), Photo.tagged_with(['Crazy animal', 'Bad'])
+    assert_equal Photo.tagged_with('"Crazy animal" Bad'), Photo.tagged_with([tags(:animal), tags(:bad)])
   end
   
-  def test_find_tagged_with_nothing
-    assert_equal [], Post.find_tagged_with("")
-    assert_equal [], Post.find_tagged_with([])
+  def test_tagged_with_nothing
+    assert_equal [], Post.tagged_with("")
+    assert_equal [], Post.tagged_with([])
   end
   
-  def test_find_tagged_with_nonexistant_tags
-    assert_equal [], Post.find_tagged_with('ABCDEFG')
-    assert_equal [], Photo.find_tagged_with(['HIJKLM'])
-    assert_equal [], Photo.find_tagged_with([Tag.new(:name => 'unsaved tag')])
+  def test_tagged_with_nonexistant_tags
+    assert_equal [], Post.tagged_with('ABCDEFG')
+    assert_equal [], Photo.tagged_with(['HIJKLM'])
+    assert_equal [], Photo.tagged_with([Tag.new(:name => 'unsaved tag')])
   end
   
-  def test_find_tagged_with_match_all
-    assert_equivalent [photos(:jonathan_dog)], Photo.find_tagged_with('Crazy animal, "Nature"', :match_all => true)
+  def test_tagged_with_match_all
+    assert_equivalent [photos(:jonathan_dog)], Photo.tagged_with('Crazy animal, "Nature"', :match_all => true)
   end
   
-  def test_find_tagged_with_match_all_and_include
-    assert_equivalent [posts(:jonathan_sky), posts(:sam_flowers)], Post.find_tagged_with(['Very good', 'Nature'], :match_all => true, :include => :tags)
+  def test_tagged_with_match_all_and_include
+    assert_equivalent [posts(:jonathan_sky), posts(:sam_flowers)], Post.tagged_with(['Very good', 'Nature'], :match_all => true, :include => :tags)
   end
   
-  def test_find_tagged_with_conditions
-    assert_equal [], Post.find_tagged_with('"Very good", Nature', :conditions => '1=0')
+  def test_tagged_with_conditions
+    assert_equal [], Post.tagged_with('"Very good", Nature').where('1=0')
   end
   
-  def test_find_tagged_with_duplicates_options_hash
-    options = { :conditions => '1=1' }.freeze
-    assert_nothing_raised { Post.find_tagged_with("Nature", options) }
+  def test_tagged_with_duplicates_options_hash
+    options = { :conditions => '1=1' }
+    assert_nothing_raised { Post.tagged_with("Nature").where(options) }
   end
   
-  def test_find_tagged_with_exclusions
-    assert_equivalent [photos(:jonathan_questioning_dog), photos(:jonathan_bad_cat)], Photo.find_tagged_with("Nature", :exclude => true)
-    assert_equivalent [posts(:jonathan_grass), posts(:jonathan_rain), posts(:jonathan_cloudy), posts(:jonathan_still_cloudy)], Post.find_tagged_with("'Very good', Bad", :exclude => true)
+  def test_tagged_with_exclusions
+    assert_equivalent [photos(:jonathan_questioning_dog), photos(:jonathan_bad_cat)], Photo.not_tagged_with("Nature")
+    assert_equivalent [posts(:jonathan_grass), posts(:jonathan_rain), posts(:jonathan_cloudy), posts(:jonathan_still_cloudy)], Post.not_tagged_with("'Very good', Bad")
   end
   
-#  def test_find_options_for_find_tagged_with_no_tags_returns_empty_hash
-#    assert_equal Hash.new, Post.find_options_for_find_tagged_with("")
-#    assert_equal Hash.new, Post.find_options_for_find_tagged_with([nil])
+#  def test_find_options_for_tagged_with_no_tags_returns_empty_hash
+#    assert_equal Hash.new, Post.find_options_for_tagged_with("")
+#    assert_equal Hash.new, Post.find_options_for_tagged_with([nil])
 #  end
   
-#  def test_find_options_for_find_tagged_with_leaves_arguments_unchanged
+#  def test_find_options_for_tagged_with_leaves_arguments_unchanged
 #    original_tags = photos(:jonathan_questioning_dog).tags.dup
-#    Photo.find_options_for_find_tagged_with(photos(:jonathan_questioning_dog).tags)
+#    Photo.find_options_for_tagged_with(photos(:jonathan_questioning_dog).tags)
 #    assert_equal original_tags, photos(:jonathan_questioning_dog).tags
 #  end
   
-#  def test_find_options_for_find_tagged_with_respects_custom_table_name
+#  def test_find_options_for_tagged_with_respects_custom_table_name
 #    Tagging.table_name = "categorisations"
 #    Tag.table_name = "categories"
 #    
-#    options = Photo.find_options_for_find_tagged_with("Hello")
+#    options = Photo.find_options_for_tagged_with("Hello")
 #    
 #    assert_no_match(/ taggings /, options[:joins])
 #    assert_no_match(/ tags /, options[:joins])
@@ -96,10 +96,10 @@ class ActsAsTaggableOnSteroidsTest < ActiveSupport::TestCase
 #    Tag.table_name = "tags"
 #  end
   
-  def test_include_tags_on_find_tagged_with
+  def test_include_tags_on_tagged_with
     assert_nothing_raised do
-      Photo.find_tagged_with('Nature', :include => :tags)
-      Photo.find_tagged_with("Nature", :include => { :taggings => :tag })
+      Photo.tagged_with('Nature', :include => :tags)
+      Photo.tagged_with("Nature", :include => { :taggings => :tag })
     end
   end
   
@@ -126,7 +126,7 @@ class ActsAsTaggableOnSteroidsTest < ActiveSupport::TestCase
   end
   
   def test_tag_counts_duplicates_options_hash
-    options = { :at_least => 2, :conditions => '1=1' }.freeze
+    options = { :at_least => 2, :conditions => '1=1' }
     assert_nothing_raised { Photo.tag_counts(options) }
   end
   
@@ -202,7 +202,7 @@ class ActsAsTaggableOnSteroidsTest < ActiveSupport::TestCase
     assert_equivalent ["Nature", "Question"], posts(:jonathan_rain).tag_list
     posts(:jonathan_rain).taggings.reload
     
-    assert_queries ENV['DB'] == 'sqlite3' ? 1 : 3 do
+    assert_queries 1 do
       posts(:jonathan_rain).update_attributes!(:tag_list => posts(:jonathan_rain).tag_list.to_s)
     end
     
@@ -298,13 +298,12 @@ class ActsAsTaggableOnSteroidsTest < ActiveSupport::TestCase
   end
   
   def test_cached_tag_list_not_used
-    # Load fixture and column information
-    posts(:jonathan_sky).taggings(:reload)
+    p = posts(:jonathan_sky)
     
     assert_queries 1 do
-      # Tags association will be loaded
-      posts(:jonathan_sky).tag_list
+      p.tag_list
     end
+    
   end
   
   def test_cached_tag_list_updated
@@ -325,11 +324,11 @@ class ActsAsTaggableOnSteroidsTest < ActiveSupport::TestCase
     assert_equal "", posts(:jonathan_sky).cached_tag_list
   end
 
-  def test_find_tagged_with_using_sti
+  def test_tagged_with_using_sti
     special_post = SpecialPost.create!(:text => "Test", :tag_list => "Random")
     
-    assert_equal [special_post],  SpecialPost.find_tagged_with("Random")
-    assert Post.find_tagged_with("Random").include?(special_post)
+    assert_equal [special_post],  SpecialPost.tagged_with("Random")
+    assert Post.tagged_with("Random").include?(special_post)
   end
   
   def test_tag_counts_using_sti
@@ -344,8 +343,8 @@ class ActsAsTaggableOnSteroidsTest < ActiveSupport::TestCase
       Post.create!(:text => "Test", :tag_list => "One")
     end
     
-    assert_equal Post.find_tagged_with("Nature").collect(&:id),
-      Post.find_tagged_with("nature").collect(&:id)
+    assert_equal Post.tagged_with("Nature").collect(&:id),
+      Post.tagged_with("nature").collect(&:id)
   end
   
   def test_tag_not_destroyed_when_unused
@@ -372,13 +371,3 @@ class ActsAsTaggableOnSteroidsTest < ActiveSupport::TestCase
     Tag.destroy_unused = false
   end
 end
-
-#class ActsAsTaggableOnSteroidsFormTest < ActiveSupport::TestCase
-#  include ActionView::Helpers::FormHelper
-#  
-#  def test_tag_list_contents
-#    fields_for :post, posts(:jonathan_sky) do |f|
-#      assert_match posts(:jonathan_sky).tag_list.to_s, f.text_field(:tag_list)
-#    end
-#  end
-#end
