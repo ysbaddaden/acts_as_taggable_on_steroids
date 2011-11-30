@@ -1,10 +1,5 @@
 = acts_as_taggable_on_steroids
 
-If you find this plugin useful, please consider a donation to show your support!
-
-  http://www.paypal.com/cgi-bin/webscr?cmd=_send-money
-  
-  Email address: jonathan.viney@gmail.com
   
 == Instructions
 
@@ -13,13 +8,10 @@ such as tests, smarter tag assignment, and tag cloud calculations.
 
 == Installation
 
-Rails 2.*
-
-  ruby script/plugin install git://github.com/jviney/acts_as_taggable_on_steroids.git
-
 Rails 3:
 
-  rails plugin install git://github.com/jviney/acts_as_taggable_on_steroids.git
+  gem "bborn-acts_as_taggable_on_steroids"
+
 
 == Usage
 
@@ -64,12 +56,12 @@ In your views you should use something like the following:
 
 To retrieve objects tagged with a certain tag, use find_tagged_with.
 
-  Post.find_tagged_with('Funny, Silly')
+  Post.tagged_with('Funny, Silly')
   
 By default, find_tagged_with will find objects that have any of the given tags. To
 find only objects that are tagged with all the given tags, use match_all.
 
-  Post.find_tagged_with('Funny, Silly', :match_all => true)
+  Post.tagged_with('Funny, Silly', :match_all => true)
   
 See <tt>ActsAsTaggable::ActiveRecordExtension::InstanceMethods</tt> for more methods and options.
 
@@ -151,7 +143,3 @@ Set Tag.destroy_unused to remove tags when they are no longer being
 used to tag any objects. Defaults to false.
 
   Tag.destroy_unused = true
-
-=== Other
-
-Problems, comments, and suggestions all welcome. jonathan.viney@gmail.com  
