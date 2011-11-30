@@ -1,6 +1,8 @@
 ActsAsTaggableOnSteroids
 ========================
 
+[![Build Status](https://secure.travis-ci.org/bborn/acts_as_taggable_on_steroids.png)](http://travis-ci.org/bborn/acts_as_taggable_on_steroids)
+
   
 Instructions
 ------------
