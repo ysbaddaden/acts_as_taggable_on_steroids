@@ -43,8 +43,8 @@ class Tag < ActiveRecord::Base
       options.assert_valid_keys :start_at, :end_at, :at_least, :at_most, :conditions, :limit, :order, :joins
       
       tags = joins(:taggings)
-      tags = tags.having(['count >= ?', options[:at_least]]) if options[:at_least]
-      tags = tags.having(['count <= ?', options[:at_most]])  if options[:at_most]
+      tags = tags.having(["COUNT(#{quoted_table_name}.id) >= ?", options[:at_least]]) if options[:at_least]
+      tags = tags.having(["COUNT(#{quoted_table_name}.id) <= ?", options[:at_most]])  if options[:at_most]
       tags = tags.where("#{Tagging.quoted_table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
       tags = tags.where("#{Tagging.quoted_table_name}.created_at <= ?", options[:end_at])   if options[:end_at]
       
