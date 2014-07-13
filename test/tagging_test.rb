@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/abstract_unit'
+require 'test_helper'
 
 class TaggingTest < ActiveSupport::TestCase
   def test_tag

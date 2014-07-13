@@ -1,0 +1,6 @@
+bundler_args: --binstubs
+
+rvm:
+  - 1.9.2
+  
+env: "RAILS_ENV='test' "
